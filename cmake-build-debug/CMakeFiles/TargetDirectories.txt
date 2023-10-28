@@ -1,0 +1,3 @@
+/Users/ryan/Documents/COMP5004CW/cmake-build-debug/CMakeFiles/textadv.dir
+/Users/ryan/Documents/COMP5004CW/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/ryan/Documents/COMP5004CW/cmake-build-debug/CMakeFiles/rebuild_cache.dir

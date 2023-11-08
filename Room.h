@@ -1,28 +1,37 @@
-//
-// Created by DrMark on 10/2/2017.
-//
-
-
 #ifndef TEXTADV_ROOM_H
+
 #define TEXTADV_ROOM_H
 
+
 #include <string>
+
 #include <forward_list>
+
 #include <list>
+
+#include "GameObject.h"
+
 
 using std::string;
 
 /**
  * Represents a room (accessible location in the game).
  */
+
 class Room {
+
+
     /**
      * Short name used as a header.
      */
+
+
     const string* name;
     /**
      * Full description of the room.
      */
+
+
     const string* description;
     /**
      * Pointer to room that is north of this one.
@@ -31,12 +40,8 @@ class Room {
     Room* south;
     Room* east;
     Room* west;
+    std::list<GameObject> gameObjects;  // List of GameObjects in the room
 public:
-    /**
-     * Constructs a new Room.
-     * @param _name Name of the room.
-     * @param _desc Description of the room.
-     */
     Room(const string *_name, const string *_desc);
 
     /**
@@ -48,11 +53,15 @@ public:
      * Outputs the name and description of the room
      * in standard format.
      */
+
+
     void describe() const;
 
     /**
      * List storing all rooms that have been registered via addRoom().
      */
+
+
     static std::list<Room*> rooms;
 
     /**
@@ -60,9 +69,8 @@ public:
      * @param _name Name of the room.
      * @param _desc Description of the room.
      */
-    static Room* addRoom(const string* _name, const string* _desc);
+    static Room* addRoom(const string *_name, string* _desc);
     static void addRoom(Room* room);
-
 
     Room* getNorth() const;
     void setNorth(Room* _north);
@@ -75,6 +83,11 @@ public:
 
     Room* getWest() const;
     void setWest(Room* _west);
+
+    // Methods to manipulate the list of GameObjects
+    void addGameObject(const GameObject& object);
+    void removeGameObject(const GameObject& object);
+    const std::list<GameObject>& getGameObjects() const;
 };
 
 #endif //TEXTADV_ROOM_H

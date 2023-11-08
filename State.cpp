@@ -37,3 +37,17 @@ void State::goTo(Room *target) {
 Room* State::getCurrentRoom() const {
     return this->currentRoom;
 }
+
+// Methods to manipulate the player's inventory
+
+void State::addToInventory(const GameObject& object) {
+    inventory.push_back(object);
+}
+
+void State::removeFromInventory(const GameObject& object) {
+    inventory.remove(object);
+}
+
+const std::list<GameObject>& State::getInventory() const {
+    return inventory;
+}

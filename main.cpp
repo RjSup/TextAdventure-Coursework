@@ -1,27 +1,26 @@
-
 #include <iostream>
-//#include <iomanip>
-#include <memory>
-#include <iterator>
-//#include <vector>
-//#include <forward_list>
+#include <string>
+#include <sstream>
+#include <vector>
+#include <algorithm>
+#include <functional>
 #include "Room.h"
 #include "wordwrap.h"
 #include "State.h"
 #include "strings.h"
 
-
 using std::string;
 using std::unique_ptr;
+using std::vector;
 
 string commandBuffer;
-State *currentState;
+State* currentState;
 
 /**
  * Print out the command prompt then read a command into the provided string buffer.
  * @param buffer Pointer to the string buffer to use.
  */
-void inputCommand(string *buffer) {
+void inputCommand(string* buffer) {
     buffer->clear();
     std::cout << "> ";
     std::getline(std::cin, *buffer);
@@ -31,12 +30,11 @@ void inputCommand(string *buffer) {
  * Sets up the map.
  */
 void initRooms() {
-
-    auto * r5 = new Room(&r5name, &r5desc);
-    auto * r4 = new Room(&r4name, &r4desc);
-    auto * r3 = new Room(&r3name, &r3desc);
-    auto * r2 = new Room(&r2name, &r2desc);
-    auto * r1 = new Room(&r1name, &r1desc);
+    auto* r5 = new Room(&r5name, &r5desc);
+    auto* r4 = new Room(&r4name, &r4desc);
+    auto* r3 = new Room(&r3name, &r3desc);
+    auto* r2 = new Room(&r2name, &r2desc);
+    auto* r1 = new Room(&r1name, &r1desc);
     Room::addRoom(r1);
     Room::addRoom(r2);
     Room::addRoom(r3);
@@ -50,6 +48,18 @@ void initRooms() {
     r4->setNorth(r3);
     r4->setWest(r5);
     r5->setEast(r4);
+
+    // create game objects
+    GameObject object1("Laptop", "An old dusty laptop", "laptop");
+    GameObject object2("Drink", "It's Dr Pepper, your favourite", "drink");
+    GameObject object3("Shoe", "Some cool shoes", "shoe");
+    GameObject object4("snus", "An unopened pack of snus, try one!", "snus");
+
+    // add game object to rooms
+    r1->addGameObject(object1);
+    r2->addGameObject(object2);
+    r2->addGameObject(object3);
+    r3->addGameObject(object4);
 }
 
 /**
@@ -59,84 +69,141 @@ void initState() {
     currentState = new State(Room::rooms.front());
 }
 
-
 /**
  * The main game loop.
  */
 void gameLoop() {
-    bool gameOver=false;
+    //an array of valid commands
+    std::string commands[] = {
+            "north", "east", "south", "west", "quit", "get", "drop", "inventory", "examine"
+    };
+
+    // array of functions corresponding to each command
+    void (*actions[])() = {
+            [] { currentState->goTo(currentState->getCurrentRoom()->getNorth()); },
+            [] { currentState->goTo(currentState->getCurrentRoom()->getEast()); },
+            [] { currentState->goTo(currentState->getCurrentRoom()->getSouth()); },
+            [] { currentState->goTo(currentState->getCurrentRoom()->getWest()); },
+    };
+
+    bool gameOver = false;
     while (!gameOver) {
-        /* Ask for a command. */
-        bool commandOk = false;
-        inputCommand(&commandBuffer);
+        std::cout << "> ";
+        std::string input;
+        std::getline(std::cin, input);
 
-        /* The first word of a command would normally be the verb. The first word is the text before the first
-         * space, or if there is no space, the whole string. */
-        auto endOfVerb = static_cast<uint8_t>(commandBuffer.find(' '));
+        std::vector<std::string> words;
+        std::istringstream iss(input);
+        std::copy(std::istream_iterator<std::string>(iss), std::istream_iterator<std::string>(),
+                  std::back_inserter(words));
 
+        if (!words.empty()) {
+            std::string firstWord = words[0];
 
+            // Check the "get" command
+            if (firstWord == "get") {
+                if (words.size() > 1) {
+                    std::string secondWord = words[1];
 
-        /* We could copy the verb to another string but there's no reason to, we'll just compare it in place. */
-        /* Command to go north. */
-        if ((commandBuffer.compare(0,endOfVerb,"north") == 0) || (commandBuffer.compare(0,endOfVerb,"n") == 0)) {
-            commandOk = true; /* Confirm command has been handled */
-            /* See if there's a north exit */
-            Room *northRoom = currentState->getCurrentRoom()->getNorth();
-            if (northRoom == nullptr) { /* there isn't */
-                wrapOut(&badExit);      /* Output the "can't go there" message */
-                wrapEndPara();
-            } else {                    /* There is */
-                currentState->goTo(northRoom); /* Update state to that room - this will also describe it */
+                    // Search for the object in the current room
+                    const std::list<GameObject> &currentRoomObjects = currentState->getCurrentRoom()->getGameObjects();
+                    auto objectInRoom = std::find_if(currentRoomObjects.begin(), currentRoomObjects.end(),
+                                                     [secondWord](const GameObject &object) {
+                                                         return object.getKeyword() == secondWord;
+                                                     });
+
+                    if (objectInRoom != currentRoomObjects.end()) {
+                        // Object found in the room, move it to the inventory
+                        currentState->addToInventory(*objectInRoom);
+                        currentState->getCurrentRoom()->removeGameObject(*objectInRoom);
+
+                        std::cout << "You picked up " << objectInRoom->getShortName() << ".\n";
+                    } else {
+                        std::cout << "The object does not exist in the room.\n";
+                    }
+                } else {
+                    std::cout << "Please specify the object you want to get.\n";
+                }
+            } else if (firstWord == "drop") {
+                if (words.size() > 1) {
+                    std::string secondWord = words[1];
+
+                    // Search for the object in the player's inventory
+                    const std::list<GameObject> &inventory = currentState->getInventory();
+                    auto objectInInventory = std::find_if(inventory.begin(), inventory.end(),
+                                                          [secondWord](const GameObject &object) {
+                                                              return object.getKeyword() == secondWord;
+                                                          });
+
+                    if (objectInInventory != inventory.end()) {
+                        // Object found in the inventory, move it to the current room
+                        currentState->getCurrentRoom()->addGameObject(*objectInInventory);
+                        currentState->removeFromInventory(*objectInInventory);
+
+                        std::cout << "You dropped " << objectInInventory->getShortName() << " in the room.\n";
+                    } else {
+                        std::cout << "The object does not exist in your inventory.\n";
+                    }
+                } else {
+                    std::cout << "Please specify the object you want to drop.\n";
+                }
+            } else if (firstWord == "inventory") {
+                // Print out the short names of all objects in the inventory
+                const std::list<GameObject> &inventory = currentState->getInventory();
+                if (!inventory.empty()) {
+                    std::cout << "Inventory:\n";
+                    for (const GameObject &object: inventory) {
+                        std::cout << object.getShortName() << "\n";
+                    }
+                } else {
+                    std::cout << "Your inventory is empty.\n";
+                }
+            } else if (firstWord == "examine") {
+                if (words.size() > 1) {
+                    std::string secondWord = words[1];
+
+                    // Search for the object in the player's inventory
+                    const std::list<GameObject> &inventory = currentState->getInventory();
+                    auto objectInInventory = std::find_if(inventory.begin(), inventory.end(),
+                                                          [secondWord](const GameObject &object) {
+                                                              return object.getKeyword() == secondWord;
+                                                          });
+
+                    // Search for the object in the current room if not found in the inventory
+                    if (objectInInventory == inventory.end()) {
+                        const std::list<GameObject> &currentRoomObjects = currentState->getCurrentRoom()->getGameObjects();
+                        objectInInventory = std::find_if(currentRoomObjects.begin(), currentRoomObjects.end(),
+                                                         [secondWord](const GameObject &object) {
+                                                             return object.getKeyword() == secondWord;
+                                                         });
+                    }
+
+                    if (objectInInventory != inventory.end()) {
+                        std::cout << objectInInventory->getLongDescription() << "\n";
+                    } else {
+                        std::cout << "The object does not exist in your inventory or the current room.\n";
+                    }
+                } else {
+                    std::cout << "Please specify the object you want to examine.\n";
+                }
+            } else {
+                bool commandFound = false;
+                for (int i = 0; i < sizeof(commands) / sizeof(commands[0]); i++) {
+                    if (commands[i] == firstWord) {
+                        commandFound = true;
+                        actions[i]();
+                        break;
+                    }
+                }
+
+                // If the command hasn't been set, the command wasn't understood
+                if (!commandFound) {
+                    wrapOut(&badCommand);
+                }
             }
-        }
-        else if ((commandBuffer.compare(0,endOfVerb,"east") == 0) || (commandBuffer.compare(0,endOfVerb,"e") == 0)) {
-            commandOk = true; /* Confirm command has been handled */
-            /* See if there's an east exit */
-            Room *eastRoom = currentState->getCurrentRoom()->getEast();
-            if (eastRoom == nullptr) { /* there isn't */
-                wrapOut(&badExit);      /* Output the "can't go there" message */
-                wrapEndPara();
-            } else {                    /* There is */
-                currentState->goTo(eastRoom); /* Update state to that room - this will also describe it */
-            }
-        }
-        else if ((commandBuffer.compare(0,endOfVerb,"south") == 0) || (commandBuffer.compare(0,endOfVerb,"s") == 0)) {
-            commandOk = true; /* Confirm command has been handled */
-            /* See if there's a south exit */
-            Room *southRoom = currentState->getCurrentRoom()->getSouth();
-            if (southRoom == nullptr) { /* there isn't */
-                wrapOut(&badExit);      /* Output the "can't go there" message */
-                wrapEndPara();
-            } else {                    /* There is */
-                currentState->goTo(southRoom); /* Update state to that room - this will also describe it */
-            }
-        }
-        else if ((commandBuffer.compare(0,endOfVerb,"west") == 0) || (commandBuffer.compare(0,endOfVerb,"w") == 0)) {
-            commandOk = true; /* Confirm command has been handled */
-            /* See if there's a west exit */
-            Room *westRoom = currentState->getCurrentRoom()->getWest();
-            if (westRoom == nullptr) { /* there isn't */
-                wrapOut(&badExit);      /* Output the "can't go there" message */
-                wrapEndPara();
-            } else {                    /* There is */
-                currentState->goTo(westRoom); /* Update state to that room - this will also describe it */
-            }
-        }
-
-        /* Quit command */
-        if ((commandBuffer.compare(0,endOfVerb,"quit") == 0)) {
-            commandOk = true;
-            gameOver = true;
-        }
-
-        /* If commandOk hasn't been set, command wasn't understood, display error message */
-        if(!commandOk) {
-            wrapOut(&badCommand);
-            wrapEndPara();
         }
     }
 }
-
 
 int main() {
     initWordWrap();

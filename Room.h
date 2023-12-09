@@ -76,6 +76,7 @@ public:
     static Room* addRoom(const string *_name, string* _desc);
     static void addRoom(Room* room);
 
+    // getter and setters for room exits
     Room* getNorth() const;
     void setNorth(Room* _north);
 
@@ -97,12 +98,12 @@ public:
     void clear_game_objects();
 
     void setGameObjects(std::list<GameObject> &object);
+
+    // Methods for managing dropped objects
     void addDroppedObject(const GameObject& object);
     const std::list<GameObject>& getDroppedObjects() const;
 
-
-
-
+    // Method to set the index of the room
     int setRoomIndex(int newIndex);
 
 };

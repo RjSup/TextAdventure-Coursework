@@ -1,20 +1,13 @@
-//
-// Created by DrMark on 10/2/2017.
-//
 
 #include <fstream>
 #include <iostream>
 #include "State.h"
 
 /**
- * Current state of the game.
+ * Display the description of the room the player is in.
  */
-
-/**
- * Display the description of the room the player is in. */
-
 void State::announceLoc() const {
-    this->currentRoom->describe();
+    this->currentRoom->describe();  // Call the describe() method of the current room
 }
 
 /**
@@ -23,13 +16,14 @@ void State::announceLoc() const {
  */
 State::State(Room *startRoom, std::list<GameObject> list) : currentRoom(startRoom) {};
 
+
 /**
  * Move to a specified room and print its description.
  * @param target Pointer to the room to move to.
  */
 void State::goTo(Room *target) {
-    this->currentRoom = target;
-    this->announceLoc();
+    this->currentRoom = target;     // Update the current room to the target room
+    this->announceLoc();            // Print the description of the new current room
 }
 
 /**
@@ -37,30 +31,46 @@ void State::goTo(Room *target) {
  * @return Pointer to the current room.
  */
 Room* State::getCurrentRoom() const {
-    return this->currentRoom;
+    return this->currentRoom;        // Return the pointer to the current room
 }
 
+/**
+ * Setter method to update the current room.
+ * @param newCurrentRoom Pointer to the new current room.
+ */
 void State::setCurrentRoom(Room* newCurrentRoom) {
-    this->currentRoom = newCurrentRoom;
+    this->currentRoom = newCurrentRoom;  // Update the current room to the new room
 }
+
 // Methods to manipulate the player's inventory
 
+/**
+ * Add an object to the player's inventory.
+ * @param object The GameObject to add.
+ */
 void State::add_to_inventory(const GameObject& object) {
-    inventory.push_back(object);
+    inventory.push_back(object);   // Add the object to the end of the inventory list
 }
 
+/**
+ * Remove an object from the player's inventory.
+ * @param object The GameObject to remove.
+ */
 void State::remove_from_inventory(const GameObject& object) {
-    inventory.remove(object);
+    inventory.remove(object);      // Remove the object from the inventory list
 }
 
+/**
+ * Get a copy of the player's current inventory.
+ * @return A copy of the inventory list.
+ */
 const std::list<GameObject> State::get_inventory() const {
-    return inventory;
+    return inventory;              // Return a copy of the inventory list
 }
 
+/**
+ * Clear the entire player's inventory.
+ */
 void State::clear_inventory() {
-    inventory.clear();
+    inventory.clear();             // Clear all elements from the inventory list
 }
-
-
-
-

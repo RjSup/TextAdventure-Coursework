@@ -13,15 +13,18 @@ class State {
     std::list<GameObject> inventory; // List of GameObjects the player is carrying
 
 public:
-    explicit State(Room *startRoom);
+    explicit State(Room *startRoom, std::list<GameObject> list);
     void goTo(Room *target);
     void announceLoc() const;
     Room* getCurrentRoom() const;
 
     // Methods to manipulate the player's inventory
-    void addToInventory(const GameObject& object);
-    void removeFromInventory(const GameObject& object);
-    const std::list<GameObject>& getInventory() const;
+    void add_to_inventory(const GameObject& object);
+    void remove_from_inventory(const GameObject& object);
+    const std::list<GameObject> get_inventory() const;
+    void clear_inventory();
+
+    void setCurrentRoom(Room *newCurrentRoom);
 };
 
 #endif // TEXTADV_STATE_H

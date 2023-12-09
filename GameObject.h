@@ -1,28 +1,29 @@
 #ifndef GAMEOBJECT_H
 #define GAMEOBJECT_H
 
+#include <iostream>
 #include <string>
 
 class GameObject {
 public:
-    // Constructor to initialize the object with a short name, long description, and keyword
-    GameObject(std::string shortName, std::string longDescription, std::string keyword);
+    GameObject(std::string short_name, std::string long_description, std::string keyword);
+    GameObject(); // Default constructor
 
-    // Getter methods to access the object's properties
-    std::string getShortName() const;
-    std::string getLongDescription() const;
-    std::string getKeyword() const;
+    std::string get_short_name() const;
+    std::string get_long_description() const;
+    std::string get_keyword() const;
 
-    // Overload the equality operator for GameObject
-    bool operator==(const GameObject& other) const {
-        return (this->getShortName() == other.getShortName()) &&
-               (this->getLongDescription() == other.getLongDescription()) &&
-               (this->getKeyword() == other.getKeyword());
-    }
+    bool operator==(const GameObject& other) const;
+
+    friend std::ostream& operator<<(std::ostream& out, const GameObject& object);
+    friend std::istream& operator>>(std::istream& in, GameObject& object);
+
+    void save(std::ostream& outFile) const;
+    void load(std::istream& inFile);
 
 private:
-    std::string shortName;
-    std::string longDescription;
+    std::string short_name;
+    std::string long_description;
     std::string keyword;
 };
 

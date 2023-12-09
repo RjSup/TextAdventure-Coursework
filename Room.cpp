@@ -1,6 +1,5 @@
 #include "Room.h"
 
-#include <utility>
 #include <iostream>
 #include "wordwrap.h"
 
@@ -40,7 +39,7 @@ void Room::describe() const {
     if (!gameObjects.empty()) {
         std::cout << "Objects in the room: ";
         for (const GameObject& object : gameObjects) {
-            std::cout << object.getShortName() << ", ";
+            std::cout << object.get_short_name() << ", ";
         }
         std::cout << "\n";
     }
@@ -56,6 +55,7 @@ void Room::describe() const {
  */
 Room* Room::addRoom(const string *_name, string *_desc) {
     auto *newRoom = new Room(_name, _desc);
+    newRoom->room_index = rooms.size();
     Room::rooms.push_back(newRoom);
     return newRoom;
 }
@@ -111,17 +111,42 @@ void Room::setWest(Room* _west) {
     this->west = _west;
 }
 
-void Room::addGameObject(const GameObject& object) {
+void Room::add_game_object(const GameObject& object) {
     gameObjects.push_back(object);
 }
 
-void Room::removeGameObject(const GameObject& object) {
+void Room::remove_game_object(const GameObject& object) {
     gameObjects.remove(object);
 }
 
 const std::list<GameObject>& Room::getGameObjects() const {
     return gameObjects;
 }
+
+void Room::clear_game_objects() {
+    this->gameObjects.clear();
+}
+
+void Room::setGameObjects(std::list<GameObject> &object) {
+    this->gameObjects = object;
+}
+
+
+int Room::setRoomIndex(int newIndex) {
+    room_index = newIndex;
+    return room_index;
+}
+
+const std::list<GameObject> &Room::getDroppedObjects() const {
+    return droppedObjects;
+}
+
+void Room::addDroppedObject(const GameObject &object) {
+    droppedObjects.push_back(object);
+}
+
+
+
 
 
 

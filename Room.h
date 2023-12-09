@@ -8,6 +8,7 @@
 #include <forward_list>
 
 #include <list>
+#include <iostream>
 
 #include "GameObject.h"
 
@@ -41,6 +42,8 @@ class Room {
     Room* east;
     Room* west;
     std::list<GameObject> gameObjects;  // List of GameObjects in the room
+    std::list<GameObject> droppedObjects; // List of dropped GameObjects
+    int room_index;
 public:
     Room(const string *_name, const string *_desc);
 
@@ -64,6 +67,7 @@ public:
 
     static std::list<Room*> rooms;
 
+
     /**
      * Creates a new Room with the given parameters and register it with the static list.
      * @param _name Name of the room.
@@ -84,10 +88,23 @@ public:
     Room* getWest() const;
     void setWest(Room* _west);
 
+
     // Methods to manipulate the list of GameObjects
-    void addGameObject(const GameObject& object);
-    void removeGameObject(const GameObject& object);
+    void add_game_object(const GameObject& object);
+    void remove_game_object(const GameObject& object);
     const std::list<GameObject>& getGameObjects() const;
+
+    void clear_game_objects();
+
+    void setGameObjects(std::list<GameObject> &object);
+    void addDroppedObject(const GameObject& object);
+    const std::list<GameObject>& getDroppedObjects() const;
+
+
+
+
+    int setRoomIndex(int newIndex);
+
 };
 
 #endif //TEXTADV_ROOM_H

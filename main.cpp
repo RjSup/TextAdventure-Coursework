@@ -35,11 +35,12 @@ void save_game(const State& gameState, const std::string& filename) {
     if (outFile.is_open()) {
         // Save the current room
         Room* currentRoom = gameState.getCurrentRoom();
-        outFile.write(reinterpret_cast<char*>(&currentRoom), sizeof(currentRoom));
+        outFile.write(reinterpret_cast<char*>(&currentRoom), sizeof(*currentRoom));
 
         // Save the inventory size
-        int inventorySize = gameState.get_inventory().size();
+        std::size_t inventorySize = gameState.get_inventory().size();
         outFile.write(reinterpret_cast<char*>(&inventorySize), sizeof(inventorySize));
+
 
         // Save each object in the inventory
         for (const GameObject& object : gameState.get_inventory()) {
@@ -49,9 +50,9 @@ void save_game(const State& gameState, const std::string& filename) {
         // Save the dropped objects in each room
         for (const auto& room : Room::rooms) {
             // Save the room pointer
-            outFile.write(reinterpret_cast<char*>(room), sizeof(room));
+            outFile.write(reinterpret_cast<char*>(room), sizeof(*room));
 
-            int droppedObjectsSize = room->getDroppedObjects().size();
+            std::size_t droppedObjectsSize = room->getDroppedObjects().size();
             outFile.write(reinterpret_cast<char*>(&droppedObjectsSize), sizeof(droppedObjectsSize));
 
             for (const GameObject& droppedObject : room->getDroppedObjects()) {
@@ -73,7 +74,7 @@ void load_game(State& gameState, const std::string& filename) {
     if (inFile.is_open()) {
         // Load the current room pointer
         Room* currentRoom;
-        inFile.read(reinterpret_cast<char*>(&currentRoom), sizeof(currentRoom));
+        inFile.read(reinterpret_cast<char*>(&currentRoom), sizeof(*currentRoom));
         gameState.setCurrentRoom(currentRoom);
 
         // Load the inventory size
@@ -91,7 +92,7 @@ void load_game(State& gameState, const std::string& filename) {
         while (inFile.peek() != EOF) {
             // Load the room pointer
             Room* room;
-            inFile.read(reinterpret_cast<char*>(&room), sizeof(room));
+            inFile.read(reinterpret_cast<char*>(&room), sizeof(*room));
 
             int droppedObjectsSize;
             inFile.read(reinterpret_cast<char*>(&droppedObjectsSize), sizeof(droppedObjectsSize));

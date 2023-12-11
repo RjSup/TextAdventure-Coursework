@@ -97,6 +97,8 @@ public:
     // Methods for managing dropped objects
     void addDroppedObject(const GameObject& object);
     const std::list<GameObject>& getDroppedObjects() const;
+
+    void clearDroppedObjects();
 };
 
 #endif //TEXTADV_ROOM_H

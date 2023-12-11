@@ -13,102 +13,24 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
-// Pointer to the current game state
+// Forward declarations
+void inputCommand(string* buffer);
+void save_game(const State& gameState, const std::string& filename);
+void load_game(State& gameState, const std::string& filename);
+void initRooms();
+void initState();
+void gameLoop();
+
 State* currentState;
 
 /**
- * Function to get user input command.
- * @return User input command as a string.
+ * Print out the command prompt then read a command into the provided string buffer.
+ * @param buffer Pointer to the string buffer to use.
  */
-std::string inputCommand() {
-    std::string command;
+void inputCommand(string* buffer) {
+    buffer->clear();
     std::cout << "> ";
-    std::getline(std::cin, command);
-    return command;
-}
-
-// Function to save the game state to a binary file
-void save_game(const State& gameState, const std::string& filename) {
-    // Open the file for writing in binary mode
-    std::ofstream outFile(filename, std::ios::binary);
-
-    if (outFile.is_open()) {
-        // Save the current room
-        Room* currentRoom = gameState.getCurrentRoom();
-        outFile.write(reinterpret_cast<char*>(&currentRoom), sizeof(*currentRoom));
-
-        // Save the inventory size
-        std::size_t inventorySize = gameState.get_inventory().size();
-        outFile.write(reinterpret_cast<char*>(&inventorySize), sizeof(inventorySize));
-
-
-        // Save each object in the inventory
-        for (const GameObject& object : gameState.get_inventory()) {
-            object.save(outFile);
-        }
-
-        // Save the dropped objects in each room
-        for (const auto& room : Room::rooms) {
-            // Save the room pointer
-            outFile.write(reinterpret_cast<char*>(room), sizeof(*room));
-
-            std::size_t droppedObjectsSize = room->getDroppedObjects().size();
-            outFile.write(reinterpret_cast<char*>(&droppedObjectsSize), sizeof(droppedObjectsSize));
-
-            for (const GameObject& droppedObject : room->getDroppedObjects()) {
-                droppedObject.save(outFile);
-            }
-        }
-
-        std::cout << "Game saved successfully to " << filename << ".\n";
-    } else {
-        std::cout << "Unable to open file for saving.\n";
-    }
-}
-
-// Function to load the game state from a binary file
-void load_game(State& gameState, const std::string& filename) {
-    // Open the file for reading in binary mode
-    std::ifstream inFile(filename, std::ios::binary);
-
-    if (inFile.is_open()) {
-        // Load the current room pointer
-        Room* currentRoom;
-        inFile.read(reinterpret_cast<char*>(&currentRoom), sizeof(*currentRoom));
-        gameState.setCurrentRoom(currentRoom);
-
-        // Load the inventory size
-        int inventorySize;
-        inFile.read(reinterpret_cast<char*>(&inventorySize), sizeof(inventorySize));
-
-        // Load each object in the inventory
-        for (int i = 0; i < inventorySize; ++i) {
-            GameObject object;
-            object.load(inFile);
-            gameState.add_to_inventory(object);
-        }
-
-        // Load dropped objects in each room
-        while (inFile.peek() != EOF) {
-            // Load the room pointer
-            Room* room;
-            inFile.read(reinterpret_cast<char*>(&room), sizeof(*room));
-
-            int droppedObjectsSize;
-            inFile.read(reinterpret_cast<char*>(&droppedObjectsSize), sizeof(droppedObjectsSize));
-
-            for (int i = 0; i < droppedObjectsSize; ++i) {
-                GameObject droppedObject;
-                droppedObject.load(inFile);
-                room->addDroppedObject(droppedObject);
-            }
-        }
-
-        std::cout << "Game loaded successfully from " << filename << ".\n";
-        gameState.announceLoc();
-    } else {
-        std::cout << "Unable to open file for loading.\n";
-    }
+    std::getline(std::cin, *buffer);
 }
 
 /**
@@ -140,16 +62,18 @@ void initRooms() {
     r5->setEast(r4);
 
     // Create game objects
-    GameObject object1("Laptop", "An old dusty laptop", "laptop");
-    GameObject object2("Drink", "It's Dr Pepper, your favorite", "drink");
-    GameObject object3("Shoe", "Some cool shoes", "shoe");
-    GameObject object4("snus", "An unopened pack of snus, try one!", "snus");
+    GameObject object1("laptop", "A smart looking laptop", "laptop");
+    GameObject object2("snus", "SNUS, try one!", "snus");
+    GameObject object3("shoe", "some smart shoes", "shoe");
+    GameObject object4("game", "A fps game on CD", "game");
+    GameObject object5("drink", "A tasty carbonated drink", "drink");
 
     // Add game objects to rooms
     r1->add_game_object(object1);
-    r2->add_game_object(object2);
+    r1->add_game_object(object2);
     r2->add_game_object(object3);
-    r3->add_game_object(object4);
+    r3->add_game_object(object5);
+    r4->add_game_object(object4);
 }
 
 /**
@@ -157,7 +81,7 @@ void initRooms() {
  */
 void initState() {
     // Create a new game state with the starting room and an empty inventory
-    currentState = new State(Room::rooms.front());
+    currentState = new State(Room::rooms.front(), std::list<GameObject>());
 }
 
 /**
@@ -166,95 +90,54 @@ void initState() {
 void gameLoop() {
     // An array of valid commands
     std::string commands[] = {
-            "north", "east", "south", "west", "save", "load", "quit"
+            "north", "east", "south", "west", "get", "drop", "inventory", "examine", "save", "load", "quit"
     };
 
-    // Array of functions corresponding to each command
     void (*actions[])() = {
             [] { currentState->goTo(currentState->getCurrentRoom()->getNorth()); },
             [] { currentState->goTo(currentState->getCurrentRoom()->getEast()); },
             [] { currentState->goTo(currentState->getCurrentRoom()->getSouth()); },
             [] { currentState->goTo(currentState->getCurrentRoom()->getWest()); },
             [] {
-                std::string file_name;
-                std::cout << "Enter File Name To Save: \n";
-                std::cin >> file_name;
-                save_game(*currentState, file_name);
+                string objectKeyword;
+                std::cout << "Enter the object to pick up: ";
+                inputCommand(&objectKeyword);
+
+                auto& currentRoomObjects = currentState->getCurrentRoom()->getGameObjects();
+                auto objectInRoom = std::find_if(currentRoomObjects.begin(), currentRoomObjects.end(),
+                                                 [objectKeyword](const GameObject& object) {
+                                                     return object.get_keyword() == objectKeyword;
+                                                 });
+
+                if (objectInRoom != currentRoomObjects.end()) {
+                    currentState->add_to_inventory(*objectInRoom);
+                    currentState->getCurrentRoom()->remove_game_object(*objectInRoom);
+                    std::cout << "Picked up " << objectInRoom->get_short_name() << ".\n";
+                } else {
+                    std::cout << "The object does not exist in the room.\n";
+                }
             },
             [] {
-                std::string file_name;
-                std::cout << "Enter File Name To Load: \n";
-                std::cin >> file_name;
-                load_game(*currentState, file_name);
-            }
-    };
+                string objectKeyword;
+                std::cout << "Enter the object to drop: ";
+                inputCommand(&objectKeyword);
 
-    bool gameOver = false;
-    while (!gameOver) {
-        // Get user input using inputCommand function
-        std::string input = inputCommand();
+                std::list<GameObject> inventory = currentState->get_inventory();
+                auto objectInInventory = std::find_if(inventory.begin(), inventory.end(),
+                                                      [objectKeyword](const GameObject& object) {
+                                                          return object.get_keyword() == objectKeyword;
+                                                      });
 
-        // Tokenize the input into words
-        std::vector<std::string> words;
-        std::istringstream iss(input);
-        std::copy(std::istream_iterator<std::string>(iss), std::istream_iterator<std::string>(),
-                  std::back_inserter(words));
-
-        if (!words.empty()) {
-            std::string firstWord = words[0];
-
-            // Check for specific commands
-            if (firstWord == "get") {
-                if (words.size() > 1) {
-                    std::string secondWord = words[1];
-
-                    // Search for the object in the current room
-                    const std::list<GameObject>& currentRoomObjects = currentState->getCurrentRoom()->getGameObjects();
-                    auto objectInRoom = std::find_if(currentRoomObjects.begin(), currentRoomObjects.end(),
-                                                     [secondWord](const GameObject& object) {
-                                                         return object.get_keyword() == secondWord;
-                                                     });
-
-                    if (objectInRoom != currentRoomObjects.end()) {
-                        // Object found in the room, move it to the inventory
-                        currentState->add_to_inventory(*objectInRoom);
-                        currentState->getCurrentRoom()->remove_game_object(*objectInRoom);
-
-                        std::cout << "You picked up" << objectInRoom->get_short_name() << ".\n";
-                    } else {
-                        std::cout << "The object does not exist in the room.\n";
-                    }
+                if (objectInInventory != inventory.end()) {
+                    currentState->getCurrentRoom()->add_game_object(*objectInInventory);
+                    currentState->remove_from_inventory(*objectInInventory);
+                    std::cout << "You dropped " << objectInInventory->get_short_name() << " in the room.\n";
                 } else {
-                    std::cout << "Please specify the object you want to get.\n";
+                    std::cout << "The object does not exist in your inventory.\n";
                 }
-
-            } else if (firstWord == "drop") {
-                if (words.size() > 1) {
-                    std::string secondWord = words[1];
-
-                    // Search for the object in the player's inventory
-                    const std::list<GameObject>& inventory = currentState->get_inventory();
-                    auto objectInInventory = std::find_if(inventory.begin(), inventory.end(),
-                                                          [secondWord](const GameObject& object) {
-                                                              return object.get_keyword() == secondWord;
-                                                          });
-
-                    if (objectInInventory != inventory.end()) {
-                        // Object found in the inventory, move it to the current room
-                        currentState->getCurrentRoom()->add_game_object(*objectInInventory);
-                        currentState->remove_from_inventory(*objectInInventory);
-
-                        std::cout << "You dropped " << objectInInventory->get_short_name() << " in the room.\n";
-                    } else {
-                        std::cout << "The object does not exist in your inventory.\n";
-                    }
-                } else {
-                    std::cout << "Please specify the object you want to drop.\n";
-                }
-
-            } else if (firstWord == "inventory") {
-                // Print out the short names of all objects in the inventory
-                const std::list<GameObject>& inventory = currentState->get_inventory();
+            },
+            [] {
+                const auto& inventory = currentState->get_inventory();
                 if (!inventory.empty()) {
                     std::cout << "Inventory:\n";
                     for (const GameObject& object : inventory) {
@@ -263,53 +146,68 @@ void gameLoop() {
                 } else {
                     std::cout << "Your inventory is empty.\n";
                 }
+            },
+            [] {
+                string objectKeyword;
+                std::cout << "Enter the object to examine: ";
+                inputCommand(&objectKeyword);
 
-            } else if (firstWord == "examine") {
-                if (words.size() > 1) {
-                    std::string secondWord = words[1];
+                std::list<GameObject> inventory = currentState->get_inventory();
+                auto objectInInventory = std::find_if(inventory.begin(), inventory.end(),
+                                                      [objectKeyword](const GameObject& object) {
+                                                          return object.get_keyword() == objectKeyword;
+                                                      });
 
-                    // Search for the object in the player's inventory
-                    const std::list<GameObject> &inventory = currentState->get_inventory();
-                    auto objectInInventory = std::find_if(inventory.begin(), inventory.end(),
-                                                          [secondWord](const GameObject &object) {
-                                                              return object.get_keyword() == secondWord;
-                                                          });
-
-                    // Search for the object in the current room if not found in the inventory
-                    if (objectInInventory == inventory.end()) {
-                        const std::list<GameObject> &currentRoomObjects = currentState->getCurrentRoom()->getGameObjects();
-                        objectInInventory = std::find_if(currentRoomObjects.begin(), currentRoomObjects.end(),
-                                                         [secondWord](const GameObject &object) {
-                                                             return object.get_keyword() == secondWord;
-                                                         });
-                    }
-
-                    if (objectInInventory != inventory.end()) {
+                if (objectInInventory != inventory.end()) {
+                    std::cout << objectInInventory->get_long_description() << "\n";
+                } else {
+                    auto& currentRoomObjects = currentState->getCurrentRoom()->getGameObjects();
+                    auto objectInInventory = std::find_if(
+                            currentRoomObjects.begin(), currentRoomObjects.end(),
+                            [objectKeyword](const GameObject &object) {
+                                return object.get_keyword() == objectKeyword;
+                            });
+                    if (objectInInventory != currentRoomObjects.end()) {
                         std::cout << objectInInventory->get_long_description() << "\n";
                     } else {
-                        std::cout << "The object does not exist in your inventory or the current room.\n";
-                    }
-                } else {
-                    std::cout << "Please specify the object you want to examine.\n";
-                }
-            } else if(firstWord == "quit") {
-                gameOver = true;
-            } else {
-                // Check if the command is a valid game command
-                bool commandFound = false;
-                for (int i = 0; i < sizeof(commands) / sizeof(commands[0]); i++) {
-                    if (commands[i] == firstWord) {
-                        // Execute the corresponding action function
-                        commandFound = true;
-                        actions[i]();
-                        break;
+                        std::cout << "The object is not in your inventory or the current room.\n";
                     }
                 }
+            },
+            [] {
+                string file_name;
+                std::cout << "Enter File Name To Save: \n";
+                inputCommand(&file_name);
+                save_game(*currentState, file_name);
+            },
+            [] {
+                string file_name;
+                std::cout << "Enter File Name To Load: \n";
+                inputCommand(&file_name);
+                load_game(*currentState, file_name);
+            },
+            [] { exit(0); }
+    };
 
-                // If the command hasn't been set, the command wasn't understood
-                if (!commandFound) {
-                    wrapOut(&badCommand);
-                }
+    bool gameOver = false;
+    while (!gameOver) {
+        std::string input;
+        inputCommand(&input);
+
+        std::vector<std::string> words;
+        std::istringstream iss(input);
+        std::copy(std::istream_iterator<std::string>(iss), std::istream_iterator<std::string>(),
+                  std::back_inserter(words));
+
+        if (!words.empty()) {
+            std::string firstWord = words[0];
+
+            // Checking if the command is valid
+            auto commandIterator = std::find(std::begin(commands), std::end(commands), firstWord);
+            if (commandIterator != std::end(commands)) {
+                actions[std::distance(std::begin(commands), commandIterator)]();
+            } else {
+                wrapOut(&badCommand);
             }
         }
     }
@@ -317,15 +215,77 @@ void gameLoop() {
 
 // Main function
 int main() {
-    // Initialize word wrapping
+    // Initializing everything
     initWordWrap();
-    // Set up rooms and objects
     initRooms();
-    // Set up initial game state
     initState();
-    // Announce the initial location
     currentState->announceLoc();
-    // Enter the main game loop
     gameLoop();
     return 0;
+}
+
+void save_game(const State& gameState, const std::string& filename) {
+    std::ofstream outFile(filename, std::ios::binary);
+    if (outFile.is_open()) {
+        Room* currentRoom = gameState.getCurrentRoom();
+        outFile.write(reinterpret_cast<char*>(&currentRoom), sizeof(currentRoom));
+
+        int inventorySize = gameState.get_inventory().size();
+        outFile.write(reinterpret_cast<char*>(&inventorySize), sizeof(inventorySize));
+
+        for (const GameObject& object : gameState.get_inventory()) {
+            object.save(outFile);
+        }
+
+        for (const auto& room : Room::rooms) {
+            outFile.write(reinterpret_cast<char*>(room), sizeof(room));
+
+            int droppedObjectsSize = room->getDroppedObjects().size();
+            outFile.write(reinterpret_cast<char*>(&droppedObjectsSize), sizeof(droppedObjectsSize));
+
+            for (const GameObject& droppedObject : room->getDroppedObjects()) {
+                droppedObject.save(outFile);
+            }
+        }
+
+        std::cout << "Game saved as " << filename << ".\n";
+    } else {
+        std::cout << "Unable to open the file for saving.\n";
+    }
+}
+
+void load_game(State& gameState, const std::string& filename) {
+    std::ifstream inFile(filename, std::ios::binary);
+    if (inFile.is_open()) {
+        Room* currentRoom;
+        inFile.read(reinterpret_cast<char*>(&currentRoom), sizeof(currentRoom));
+        gameState.setCurrentRoom(currentRoom);
+
+        int inventorySize;
+        inFile.read(reinterpret_cast<char*>(&inventorySize), sizeof(inventorySize));
+
+        for (int i = 0; i < inventorySize; ++i) {
+            GameObject object;
+            object.load(inFile);
+            gameState.add_to_inventory(object);
+        }
+
+        for (auto& room : Room::rooms) {
+            int droppedObjectsSize;
+            inFile.read(reinterpret_cast<char*>(&droppedObjectsSize), sizeof(droppedObjectsSize));
+
+            room->clearDroppedObjects();  // Clear existing dropped objects
+
+            for (int i = 0; i < droppedObjectsSize; ++i) {
+                GameObject droppedObject;
+                droppedObject.load(inFile);
+                room->addDroppedObject(droppedObject);
+            }
+        }
+
+        std::cout << "Game loaded successfully from " << filename << ".\n";
+        gameState.announceLoc();
+    } else {
+        std::cout << "Unable to open file for loading.\n";
+    }
 }

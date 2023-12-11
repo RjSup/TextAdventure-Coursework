@@ -127,4 +127,8 @@ void Room::addDroppedObject(const GameObject &object) {
     droppedObjects.push_back(object);
 }
 
+void Room::clearDroppedObjects() {
+    droppedObjects.clear();
+}
+
 

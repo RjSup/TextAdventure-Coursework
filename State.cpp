@@ -11,7 +11,8 @@ void State::announceLoc() const {
  * Constructor.
  * @param startRoom Pointer to the room to start in.
  */
-State::State(Room *startRoom) : currentRoom(startRoom) {}
+State::State(Room *startRoom, std::list<GameObject> list) : currentRoom(startRoom) {};
+
 
 /**
  * Move to a specified room and print its description.
@@ -35,22 +36,11 @@ Room* State::getCurrentRoom() const {
  * @param newCurrentRoom Pointer to the new current room.
  */
 void State::setCurrentRoom(Room* newCurrentRoom) {
-    if (newCurrentRoom != nullptr) {
-        this->currentRoom = newCurrentRoom; // Update the current room to the new room
-    } else {
-        // Handle the case when newCurrentRoom is nullptr
-        std::cerr << "Error: Cannot set current room to nullptr." << std::endl;
-        // set the current room to the starting room.
-        if (!Room::rooms.empty()) {
-            this->currentRoom = Room::rooms.front();
-        } else {
-            // If there are no rooms.
-            std::cerr << "Error: No rooms available." << std::endl;
-        }
-    }
+    this->currentRoom = newCurrentRoom;  // Update the current room to the new room
 }
 
 // Methods to manipulate the player's inventory
+
 /**
  * Add an object to the player's inventory.
  * @param object The GameObject to add.
@@ -74,4 +64,6 @@ void State::remove_from_inventory(const GameObject& object) {
 std::list<GameObject> State::get_inventory() const {
     return inventory;              // Return a copy of the inventory list
 }
+
+
 

@@ -1,6 +1,3 @@
-
-#include <fstream>
-#include <iostream>
 #include "State.h"
 
 /**
@@ -14,8 +11,7 @@ void State::announceLoc() const {
  * Constructor.
  * @param startRoom Pointer to the room to start in.
  */
-State::State(Room *startRoom, std::list<GameObject> list) : currentRoom(startRoom) {};
-
+State::State(Room *startRoom) : currentRoom(startRoom) {};
 
 /**
  * Move to a specified room and print its description.
@@ -64,13 +60,7 @@ void State::remove_from_inventory(const GameObject& object) {
  * Get a copy of the player's current inventory.
  * @return A copy of the inventory list.
  */
-const std::list<GameObject> State::get_inventory() const {
+std::list<GameObject> State::get_inventory() const {
     return inventory;              // Return a copy of the inventory list
 }
 
-/**
- * Clear the entire player's inventory.
- */
-void State::clear_inventory() {
-    inventory.clear();             // Clear all elements from the inventory list
-}

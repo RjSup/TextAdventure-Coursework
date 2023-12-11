@@ -1,7 +1,6 @@
 #include "Room.h"
 
 #include <iostream>
-#include "wordwrap.h"
 
 /**
  * Stores a static list of all rooms.
@@ -38,20 +37,6 @@ void Room::describe() const {
         }
         std::cout << "\n";
     }
-}
-
-/**
- * Statically creates a room and then adds it to the global list.
- * @param _name Name for the new room.
- * @param _desc Description for the new room.
- * @param _object List of GameObjects in the room
- * @return A pointer to the newly created room.
- */
-Room* Room::addRoom(const string *_name, string *_desc) {
-    auto *newRoom = new Room(_name, _desc);
-    newRoom->room_index = rooms.size();
-    Room::rooms.push_back(newRoom);
-    return newRoom;
 }
 
 /**
@@ -127,31 +112,6 @@ const std::list<GameObject>& Room::getGameObjects() const {
 }
 
 /**
- * Clears all game objects from the room.
- */
-void Room::clear_game_objects() {
-    this->gameObjects.clear();
-}
-
-/**
- * Sets the game objects in the room.
- * @param object The list of game objects to set.
- */
-void Room::setGameObjects(std::list<GameObject> &object) {
-    this->gameObjects = object;
-}
-
-/**
- * Sets the index of the room.
- * @param newIndex The new index for the room.
- * @return The new room index.
- */
-int Room::setRoomIndex(int newIndex) {
-    room_index = newIndex;
-    return room_index;
-}
-
-/**
  * Gets the list of dropped objects in the room.
  * @return A reference to the list of dropped objects.
  */
@@ -166,3 +126,5 @@ const std::list<GameObject> &Room::getDroppedObjects() const {
 void Room::addDroppedObject(const GameObject &object) {
     droppedObjects.push_back(object);
 }
+
+

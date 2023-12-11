@@ -81,21 +81,24 @@ void GameObject::load(std::istream& inFile) {
     // Read the size of the short name from the input stream
     inFile.read(reinterpret_cast<char*>(&shortNameSize), sizeof(shortNameSize));
 
-    // Resize the short name string and read the short name from the input stream
-    short_name.resize(shortNameSize);
-    inFile.read(&short_name[0], shortNameSize);
+    // Read the short name from the input stream
+    std::vector<char> shortNameBuffer(shortNameSize);
+    inFile.read(shortNameBuffer.data(), shortNameSize);
+    short_name.assign(shortNameBuffer.data(), shortNameSize);
 
     // Read the size of the long description from the input stream
     inFile.read(reinterpret_cast<char*>(&longDescriptionSize), sizeof(longDescriptionSize));
 
-    // Resize the long description string and read the long description from the input stream
-    long_description.resize(longDescriptionSize);
-    inFile.read(&long_description[0], longDescriptionSize);
+    // Read the long description from the input stream
+    std::vector<char> longDescriptionBuffer(longDescriptionSize);
+    inFile.read(longDescriptionBuffer.data(), longDescriptionSize);
+    long_description.assign(longDescriptionBuffer.data(), longDescriptionSize);
 
     // Read the size of the keyword from the input stream
     inFile.read(reinterpret_cast<char*>(&keywordSize), sizeof(keywordSize));
 
-    // Resize the keyword string and read the keyword from the input stream
-    keyword.resize(keywordSize);
-    inFile.read(&keyword[0], keywordSize);
+    // Read the keyword from the input stream
+    std::vector<char> keywordBuffer(keywordSize);
+    inFile.read(keywordBuffer.data(), keywordSize);
+    keyword.assign(keywordBuffer.data(), keywordSize);
 }

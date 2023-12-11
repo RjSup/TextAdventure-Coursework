@@ -11,7 +11,7 @@ class State {
 
 public:
     // Constructor takes a starting room and a list of GameObjects for the initial inventory
-    explicit State(Room *startRoom, std::list<GameObject> list);
+    explicit State(Room *startRoom);
 
     // Method to move the player to a new room
     void goTo(Room *target);
@@ -25,8 +25,7 @@ public:
     // Methods to manipulate the player's inventory
     void add_to_inventory(const GameObject& object);      // Add an object to the inventory
     void remove_from_inventory(const GameObject& object); // Remove an object from the inventory
-    const std::list<GameObject> get_inventory() const;     // Get the current inventory
-    void clear_inventory();                                // Clear the entire inventory
+    std::list<GameObject> get_inventory() const;     // Get the current inventory
 
     // Setter method to update the current room
     void setCurrentRoom(Room *newCurrentRoom);

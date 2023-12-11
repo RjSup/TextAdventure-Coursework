@@ -43,7 +43,6 @@ class Room {
     Room* west;
     std::list<GameObject> gameObjects;  // List of GameObjects in the room
     std::list<GameObject> droppedObjects; // List of dropped GameObjects
-    int room_index;
 public:
     Room(const string *_name, const string *_desc);
 
@@ -63,17 +62,13 @@ public:
     /**
      * List storing all rooms that have been registered via addRoom().
      */
-
-
     static std::list<Room*> rooms;
-
-
     /**
      * Creates a new Room with the given parameters and register it with the static list.
      * @param _name Name of the room.
      * @param _desc Description of the room.
      */
-    static Room* addRoom(const string *_name, string* _desc);
+
     static void addRoom(Room* room);
 
     // getter and setters for room exits
@@ -95,17 +90,13 @@ public:
     void remove_game_object(const GameObject& object);
     const std::list<GameObject>& getGameObjects() const;
 
-    void clear_game_objects();
 
-    void setGameObjects(std::list<GameObject> &object);
+
+
 
     // Methods for managing dropped objects
     void addDroppedObject(const GameObject& object);
     const std::list<GameObject>& getDroppedObjects() const;
-
-    // Method to set the index of the room
-    int setRoomIndex(int newIndex);
-
 };
 
 #endif //TEXTADV_ROOM_H

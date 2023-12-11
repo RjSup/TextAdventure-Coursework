@@ -4,7 +4,6 @@
 #include <vector>
 #include <algorithm>
 #include <fstream>
-#include <map>
 #include "Room.h"
 #include "wordwrap.h"
 #include "State.h"
@@ -18,16 +17,14 @@ using std::vector;
 State* currentState;
 
 /**
- * Print out the command prompt then read a command into the provided string buffer.
- * @param buffer Pointer to the string buffer to use.
+ * Function to get user input command.
+ * @return User input command as a string.
  */
-void inputCommand(string* buffer) {
-    // Clear the buffer
-    buffer->clear();
-    // Print the command prompt
+std::string inputCommand() {
+    std::string command;
     std::cout << "> ";
-    // Read a line from standard input into the buffer
-    std::getline(std::cin, *buffer);
+    std::getline(std::cin, command);
+    return command;
 }
 
 // Function to save the game state to a binary file
@@ -159,7 +156,7 @@ void initRooms() {
  */
 void initState() {
     // Create a new game state with the starting room and an empty inventory
-    currentState = new State(Room::rooms.front(), std::list<GameObject>());
+    currentState = new State(Room::rooms.front());
 }
 
 /**
@@ -193,16 +190,14 @@ void gameLoop() {
 
     bool gameOver = false;
     while (!gameOver) {
-        // Display command prompt
-        std::cout << "> ";
-        std::string input;
-        std::getline(std::cin, input);
+        // Get user input using inputCommand function
+        std::string input = inputCommand();
 
         // Tokenize the input into words
         std::vector<std::string> words;
         std::istringstream iss(input);
         std::copy(std::istream_iterator<std::string>(iss), std::istream_iterator<std::string>(),
-        std::back_inserter(words));
+                  std::back_inserter(words));
 
         if (!words.empty()) {
             std::string firstWord = words[0];
@@ -231,6 +226,7 @@ void gameLoop() {
                 } else {
                     std::cout << "Please specify the object you want to get.\n";
                 }
+
             } else if (firstWord == "drop") {
                 if (words.size() > 1) {
                     std::string secondWord = words[1];
@@ -254,6 +250,7 @@ void gameLoop() {
                 } else {
                     std::cout << "Please specify the object you want to drop.\n";
                 }
+
             } else if (firstWord == "inventory") {
                 // Print out the short names of all objects in the inventory
                 const std::list<GameObject>& inventory = currentState->get_inventory();
@@ -265,22 +262,23 @@ void gameLoop() {
                 } else {
                     std::cout << "Your inventory is empty.\n";
                 }
+
             } else if (firstWord == "examine") {
                 if (words.size() > 1) {
                     std::string secondWord = words[1];
 
                     // Search for the object in the player's inventory
-                    const std::list<GameObject>& inventory = currentState->get_inventory();
+                    const std::list<GameObject> &inventory = currentState->get_inventory();
                     auto objectInInventory = std::find_if(inventory.begin(), inventory.end(),
-                                                          [secondWord](const GameObject& object) {
+                                                          [secondWord](const GameObject &object) {
                                                               return object.get_keyword() == secondWord;
                                                           });
 
                     // Search for the object in the current room if not found in the inventory
                     if (objectInInventory == inventory.end()) {
-                        const std::list<GameObject>& currentRoomObjects = currentState->getCurrentRoom()->getGameObjects();
+                        const std::list<GameObject> &currentRoomObjects = currentState->getCurrentRoom()->getGameObjects();
                         objectInInventory = std::find_if(currentRoomObjects.begin(), currentRoomObjects.end(),
-                                                         [secondWord](const GameObject& object) {
+                                                         [secondWord](const GameObject &object) {
                                                              return object.get_keyword() == secondWord;
                                                          });
                     }
@@ -293,6 +291,8 @@ void gameLoop() {
                 } else {
                     std::cout << "Please specify the object you want to examine.\n";
                 }
+            } else if(firstWord == "quit") {
+                gameOver = true;
             } else {
                 // Check if the command is a valid game command
                 bool commandFound = false;
